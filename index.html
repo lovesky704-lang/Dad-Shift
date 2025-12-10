@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>爸爸班表查詢</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft JhengHei", sans-serif;
+      margin: 0;
+      padding: 16px;
+      background: #f3f4f6;
+      color: #111827;
+    }
+
+    .app {
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 16px 18px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      margin-bottom: 16px;
+    }
+
+    .title {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: #6b7280;
+      margin-bottom: 12px;
+    }
+
+    .today-label {
+      font-size: 14px;
+      color: #6b7280;
+      margin-bottom: 4px;
+    }
+
+    .today-date {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .today-weekday {
+      font-size: 14px;
+      color: #4b5563;
+      margin-bottom: 12px;
+    }
+
+    .shift-tag {
+      display: inline-block;
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .shift-早班 {
+      background: #fef3c7;
+      color: #b45309;
+    }
+
+    .shift-晚班 {
+      background: #ffedd5;
+      color: #c2410c;
+    }
+
+    .shift-大夜 {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+
+    .shift-休息 {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    .small-hint {
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
+    .section-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .section-title span.emoji {
+      font-size: 16px;
+    }
+
+    label {
+      font-size: 13px;
+      display: block;
+      margin-bottom: 4px;
+      color: #4b5563;
+    }
+
+    input[type="date"] {
+      width: 100%;
+      padding: 8px 10px;
+      font-size: 14px;
+      border-radius: 10px;
+      border: 1px solid #d1d5db;
+      box-sizing: border-box;
+    }
+
+    .query-result {
+      margin-top: 10px;
+      font-size: 14px;
+    }
+
+    .query-result-strong {
+      font-weight: 600;
+    }
+
+    .week-list {
+      margin-top: 8px;
+      border-top: 1px solid #e5e7eb;
+      padding-top: 8px;
+    }
+
+    .week-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 0;
+      font-size: 13px;
+    }
+
+    .week-date {
+      color: #4b5563;
+    }
+
+    .week-shift {
+      font-weight: 500;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      margin-left: 6px;
+    }
+
+    .start-config {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+
+    .start-config input[type="date"] {
+      font-size: 12px;
+      padding: 6px 8px;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- 今天班別卡片 -->
+    <div class="card">
+      <div class="title">爸爸今日班表</div>
+      <div class="subtitle">依規則：早班5天→休2天→晚班5天→休2天→大夜5天→休2天（21天循環）</div>
+
+      <div class="today-label">今天日期</div>
+      <div id="todayDate" class="today-date">-</div>
+      <div id="todayWeekday" class="today-weekday">-</div>
+
+      <div id="todayShiftTag" class="shift-tag shift-休息">-</div>
+      <div class="small-hint" id="todayShiftText"></div>
+
+      <div class="week-list" id="weekList">
+        <!-- 這裡會用 JS 填入未來 7 天 -->
+      </div>
+    </div>
+
+    <!-- 查詢任意日期 -->
+    <div class="card">
+      <div class="section-title">
+        <span class="emoji">🔍</span>
+        查詢指定日期班別
+      </div>
+      <label for="queryDate">選擇日期：</label>
+      <input type="date" id="queryDate" />
+
+      <div id="queryResult" class="query-result"></div>
+    </div>
+
+    <!-- 設定循環起始日 -->
+    <div class="card">
+      <div class="section-title">
+        <span class="emoji">⚙️</span>
+        輪班循環設定
+        <span class="badge">進階</span>
+      </div>
+      <div style="font-size:13px; color:#4b5563;">
+        目前起始日設定為：<span id="startDateDisplay" style="font-weight:600;"></span><br />
+        規則：這一天視為 <span style="font-weight:600;">「早班第1天（循環第1天）」</span>。
+      </div>
+      <div class="start-config">
+        若公司將來調整班表，只需修改下面的起始日，所有計算會自動更新：<br />
+        <input type="date" id="startDateInput" />
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ====== 班表邏輯設定 ======
+    // 預設循環起始日：2025-11-23（你提供的條件推算結果：早班第1天）
+    // 月份 0 開始，所以 10 = 11月
+    let startDate = new Date(2025, 10, 23);
+    startDate.setHours(0, 0, 0, 0);
+
+    const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+    const weekdayNames = ["日", "一", "二", "三", "四", "五", "六"];
+
+    function formatDate(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}/${m}/${day}`;
+    }
+
+    function formatDateForInput(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    }
+
+    function getShift(date) {
+      const d = new Date(date);
+      d.setHours(0, 0, 0, 0);
+      const diffDays = Math.floor((d - startDate) / MS_PER_DAY);
+      // 確保負數也可以正常循環
+      const index = ((diffDays % 21) + 21) % 21;
+
+      // 0~20 對應 21天循環
+      // 1-5：早班；6-7：休；8-12：晚班；13-14：休；15-19：大夜；20-21：休
+      if (index >= 0 && index <= 4) return "早班";
+      if (index >= 5 && index <= 6) return "休息";
+      if (index >= 7 && index <= 11) return "晚班";
+      if (index >= 12 && index <= 13) return "休息";
+      if (index >= 14 && index <= 18) return "大夜";
+      if (index >= 19 && index <= 20) return "休息";
+      return "休息"; // 理論上不會到這裡
+    }
+
+    function updateTodayCard() {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const todayDateEl = document.getElementById("todayDate");
+      const todayWeekdayEl = document.getElementById("todayWeekday");
+      const todayShiftTag = document.getElementById("todayShiftTag");
+      const todayShiftText = document.getElementById("todayShiftText");
+
+      const shift = getShift(today);
+
+      todayDateEl.textContent = formatDate(today);
+      todayWeekdayEl.textContent = `星期${weekdayNames[today.getDay()]}`;
+
+      // 清掉舊 class，再加新的
+      todayShiftTag.className = "shift-tag";
+      todayShiftTag.classList.add(`shift-${shift}`);
+      todayShiftTag.textContent = shift === "休息" ? "休息日" : `${shift}班`;
+
+      if (shift === "休息") {
+        todayShiftText.textContent = "今天爸爸休息，可以好好放鬆 😌";
+      } else {
+        todayShiftText.textContent = `今天爸爸是「${shift}班」，辛苦了！`;
+      }
+
+      // 更新未來 7 天列表
+      updateWeekList(today);
+    }
+
+    function updateWeekList(baseDate) {
+      const container = document.getElementById("weekList");
+      container.innerHTML = "";
+
+      const title = document.createElement("div");
+      title.style.fontSize = "13px";
+      title.style.color = "#6b7280";
+      title.style.marginBottom = "4px";
+      title.textContent = "未來 7 天班別一覽：";
+      container.appendChild(title);
+
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(baseDate.getTime() + i * MS_PER_DAY);
+        d.setHours(0, 0, 0, 0);
+        const shift = getShift(d);
+
+        const item = document.createElement("div");
+        item.className = "week-item";
+
+        const left = document.createElement("div");
+        left.className = "week-date";
+        left.textContent = `${formatDate(d)}（星期${weekdayNames[d.getDay()]}）`;
+
+        const right = document.createElement("div");
+        right.className = "week-shift";
+        right.textContent = shift === "休息" ? "休息" : `${shift}班`;
+
+        item.appendChild(left);
+        item.appendChild(right);
+        container.appendChild(item);
+      }
+    }
+
+    function handleQueryDateChange() {
+      const input = document.getElementById("queryDate");
+      const result = document.getElementById("queryResult");
+      if (!input.value) {
+        result.textContent = "";
+        return;
+      }
+      const d = new Date(input.value);
+      if (isNaN(d.getTime())) {
+        result.textContent = "日期格式不正確。";
+        return;
+      }
+      const shift = getShift(d);
+      const weekName = weekdayNames[d.getDay()];
+
+      result.innerHTML = `
+        <span class="query-result-strong">${formatDate(d)}（星期${weekName}）</span>
+        的班別為：
+        <span class="query-result-strong">${shift === "休息" ? "休息" : shift + "班"}</span>
+      `;
+    }
+
+    function handleStartDateChange() {
+      const input = document.getElementById("startDateInput");
+      const display = document.getElementById("startDateDisplay");
+      if (!input.value) return;
+
+      const d = new Date(input.value);
+      if (isNaN(d.getTime())) return;
+
+      d.setHours(0, 0, 0, 0);
+      startDate = d;
+      display.textContent = formatDate(startDate);
+
+      // 起始日變了，要重新更新畫面
+      updateTodayCard();
+      handleQueryDateChange();
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      // 初始化起始日顯示
+      const startDateDisplay = document.getElementById("startDateDisplay");
+      const startDateInput = document.getElementById("startDateInput");
+      startDateDisplay.textContent = formatDate(startDate);
+      startDateInput.value = formatDateForInput(startDate);
+
+      // 設定查詢日期預設為今天
+      const queryDateInput = document.getElementById("queryDate");
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      queryDateInput.value = formatDateForInput(today);
+
+      // 綁定事件
+      queryDateInput.addEventListener("change", handleQueryDateChange);
+      startDateInput.addEventListener("change", handleStartDateChange);
+
+      // 初始化畫面
+      updateTodayCard();
+      handleQueryDateChange();
+    });
+  </script>
+</body>
+</html>
