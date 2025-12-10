@@ -178,7 +178,9 @@
     <!-- 今天班別卡片 -->
     <div class="card">
       <div class="title">爸爸今日班表</div>
-      <div class="subtitle">依規則：早班5天→休2天→晚班5天→休2天→大夜5天→休2天（21天循環）</div>
+      <div class="subtitle">
+        依規則：大夜5天 → 休2天 → 晚班5天 → 休2天 → 早班5天 → 休2天（21天循環）
+      </div>
 
       <div class="today-label">今天日期</div>
       <div id="todayDate" class="today-date">-</div>
@@ -213,7 +215,7 @@
       </div>
       <div style="font-size:13px; color:#4b5563;">
         目前起始日設定為：<span id="startDateDisplay" style="font-weight:600;"></span><br />
-        規則：這一天視為 <span style="font-weight:600;">「早班第1天（循環第1天）」</span>。
+        規則：這一天視為 <span style="font-weight:600;">「大夜第1天（循環第1天）」</span>。
       </div>
       <div class="start-config">
         若公司將來調整班表，只需修改下面的起始日，所有計算會自動更新：<br />
@@ -224,13 +226,12 @@
 
   <script>
     // ====== 班表邏輯設定 ======
-    // 預設循環起始日：2025-11-23（你提供的條件推算結果：早班第1天）
-    // 月份 0 開始，所以 10 = 11月
-    let startDate = new Date(2025, 10, 23);
+    // 預設循環起始日：2025-12-06（大夜第1天）
+    // 月份從 0 開始，所以 11 代表 12 月
+    let startDate = new Date(2025, 11, 6);
     startDate.setHours(0, 0, 0, 0);
 
     const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
     const weekdayNames = ["日", "一", "二", "三", "四", "五", "六"];
 
     function formatDate(d) {
@@ -247,22 +248,27 @@
       return `${y}-${m}-${day}`;
     }
 
+    // 大夜5 → 休2 → 晚班5 → 休2 → 早班5 → 休2（21天循環）
     function getShift(date) {
       const d = new Date(date);
       d.setHours(0, 0, 0, 0);
       const diffDays = Math.floor((d - startDate) / MS_PER_DAY);
-      // 確保負數也可以正常循環
+      // 支援往前推算，結果固定在 0~20
       const index = ((diffDays % 21) + 21) % 21;
 
-      // 0~20 對應 21天循環
-      // 1-5：早班；6-7：休；8-12：晚班；13-14：休；15-19：大夜；20-21：休
-      if (index >= 0 && index <= 4) return "早班";
+      // 0~4：大夜
+      // 5~6：休息
+      // 7~11：晚班
+      // 12~13：休息
+      // 14~18：早班
+      // 19~20：休息
+      if (index >= 0 && index <= 4) return "大夜";
       if (index >= 5 && index <= 6) return "休息";
       if (index >= 7 && index <= 11) return "晚班";
       if (index >= 12 && index <= 13) return "休息";
-      if (index >= 14 && index <= 18) return "大夜";
+      if (index >= 14 && index <= 18) return "早班";
       if (index >= 19 && index <= 20) return "休息";
-      return "休息"; // 理論上不會到這裡
+      return "休息";
     }
 
     function updateTodayCard() {
@@ -319,6 +325,7 @@
 
         const right = document.createElement("div");
         right.className = "week-shift";
+        // A 方案：不再多加「班」，避免出現「早班班」
         right.textContent = shift;
 
         item.appendChild(left);
@@ -342,10 +349,11 @@
       const shift = getShift(d);
       const weekName = weekdayNames[d.getDay()];
 
+      // 這裡一樣只顯示「早班 / 晚班 / 大夜 / 休息」，不再多加「班」
       result.innerHTML = `
         <span class="query-result-strong">${formatDate(d)}（星期${weekName}）</span>
         的班別為：
-        <span class="query-result-strong">${shift === "休息" ? "休息" : shift + "班"}</span>
+        <span class="query-result-strong">${shift}</span>
       `;
     }
 
@@ -390,4 +398,3 @@
   </script>
 </body>
 </html>
-
